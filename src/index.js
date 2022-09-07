@@ -1,7 +1,8 @@
 import QRCode from 'qrcode';
-import { toPng, toJpeg, toBlob, toPixelData, toSvg } from 'html-to-image';
+import { toPng } from 'html-to-image';
 import background_url from './background.jpg';
 import './style.css';
+import moment from 'moment';
 
 const background = document.createElement('img');
 background.src = background_url;
@@ -10,9 +11,7 @@ background.id = 'background';
 const canvas = document.createElement('canvas');
 canvas.className = 'id_canvas';
 
-const url = 'https://drive.google.com/file/d/1Dv5nTCgs6Gu0z4EzTKKMSrStQStQyKvv/view?usp=sharing';
-
-(async () => {
+async function createId(name, expiration, qr_url) {
     // Wait for image to load first
     await background.decode();
 
@@ -33,7 +32,14 @@ const url = 'https://drive.google.com/file/d/1Dv5nTCgs6Gu0z4EzTKKMSrStQStQyKvv/v
     const qr_canvas = html_div.querySelector('.qr_canvas');
     html_div.style.backgroundImage = `url(${background_url})`;
 
-    await QRCode.toCanvas(qr_canvas, url, {
+    // Replace content from template
+    const name_elem = html_div.querySelector('.info > h2');
+    name_elem.innerHTML = name;
+    const expritation_elem = html_div.querySelector('.info > h3');
+    expritation_elem.innerHTML = expiration || 'LIFE MEMBER';
+
+    // Generate QR Code
+    await QRCode.toCanvas(qr_canvas, qr_url, {
         errorCorrectionLevel: 'H',
         color: {
             light: '#0000'
@@ -42,16 +48,46 @@ const url = 'https://drive.google.com/file/d/1Dv5nTCgs6Gu0z4EzTKKMSrStQStQyKvv/v
         margin: 0
     });
 
-    // Add html to doc
+    // Element needs to be in dom for it to be converted to image
     document.body.appendChild(html_div);
 
-    // TODO create image
+    // Create image
     const dataUrl = await toPng(html_div);
-    const asdf = new Image();
-    asdf.src = dataUrl;
-    document.body.appendChild(asdf);
+    const output = new Image();
+    output.src = dataUrl;
 
-    console.log('Done.');
-})();
+    // Remove element from dom
+    document.body.removeChild(html_div);
 
-// TODO render things in HTML for text and layout then inject them into the canvas after
+    return output;
+}
+
+// TODO create form to update id
+
+const name_input = document.getElementById('name');
+const date_input = document.getElementById('date');
+const url_input = document.getElementById('url');
+
+name_input.addEventListener('change', updateId);
+date_input.addEventListener('change', updateId);
+url_input.addEventListener('change', updateId);
+
+async function updateId() {
+    const HTML_ID = 'generated_id_card';
+
+    // Check for existing image and remove it
+    const existing = document.getElementById(HTML_ID);
+    if (existing) document.body.removeChild(existing);
+
+    let date_value = undefined;
+
+    if (date_input.value) {
+        date_value = moment(date_input.value).format('MM/DD/YYYY');
+    }
+
+    const id_card = await createId(name_input.value, date_value, url_input.value);
+    id_card.className = 'generated';
+    id_card.id = HTML_ID;
+
+    document.body.appendChild(id_card);
+}
