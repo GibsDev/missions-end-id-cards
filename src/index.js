@@ -72,11 +72,13 @@ name_input.addEventListener('change', updateId);
 date_input.addEventListener('change', updateId);
 url_input.addEventListener('change', updateId);
 
+const CARD_HTML_ID = 'generated_id_card';
+const download = document.getElementById('download');
+
 async function updateId() {
-    const HTML_ID = 'generated_id_card';
 
     // Check for existing image and remove it
-    const existing = document.getElementById(HTML_ID);
+    const existing = document.getElementById(CARD_HTML_ID);
     if (existing) document.body.removeChild(existing);
 
     let date_value = undefined;
@@ -87,7 +89,19 @@ async function updateId() {
 
     const id_card = await createId(name_input.value, date_value, url_input.value);
     id_card.className = 'generated';
-    id_card.id = HTML_ID;
+    id_card.id = CARD_HTML_ID;
 
     document.body.appendChild(id_card);
+
+    download.href = id_card.src;
+    download.download = name_input.value.replace(' ', '_') + '-MEID.png';
 }
+
+
+/*
+download.addEventListener('click', () => {
+    const generated_card = document.getElementById(CARD_HTML_ID);
+    var url = generated_card.src.replace(/^data:image\/[^;]+/, 'data:application/octet-stream');
+    window.open(url);
+});
+*/
